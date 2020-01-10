@@ -22,6 +22,11 @@ https://github.com/lenamatyjek/ET_class
 
 (click on "Clone or download" and download ZIP)
 
+
+To sign-up for the participants'database, go to:
+https://www2.hu-berlin.de/ef-dg/mbexperiments
+You will be notified when there's an ongoing study for which you are eligible.
+
 ## Hands-on exercise
 
 Task:

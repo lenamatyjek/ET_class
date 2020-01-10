@@ -14,6 +14,14 @@ rm(list=ls())
 Sys.setenv(LANG = "en")
 ```
 
+## Materials
+
+Slides from the lecture and from this tutorial can be found at:
+
+https://github.com/lenamatyjek/ET_class
+
+(click on "Clone or download" and download ZIP)
+
 ## Hands-on exercise
 
 Task:
@@ -408,33 +416,33 @@ summary(model)
 
 >- What are effect sizes and where are they in this output?
 
-## Controlling for luminance
+<!-- ## Controlling for luminance -->
 
-Models controlling (left) and **not** controlling (right) for luminance:
+<!-- Models controlling (left) and **not** controlling (right) for luminance: -->
 
-```{r, message=FALSE, warning=FALSE}
-p1<- sjPlot::plot_model({model},
-           type = "pred",
-           terms = c("cond"),
-           alpha = 0.1) +
-  ylim(0.1,1) +
-  theme_minimal() +
-  theme(legend.position = "bottom") +
-  theme(text = element_text(size=15))
+<!-- ```{r, message=FALSE, warning=FALSE} -->
+<!-- p1<- sjPlot::plot_model({model}, -->
+<!--            type = "pred", -->
+<!--            terms = c("cond"), -->
+<!--            alpha = 0.1) + -->
+<!--   ylim(0.1,1) + -->
+<!--   theme_minimal() + -->
+<!--   theme(legend.position = "bottom") + -->
+<!--   theme(text = element_text(size=15)) -->
 
-p2<- sjPlot::plot_model({model_no_luminance},
-           type = "pred",
-           terms = c("cond"),
-           alpha = 0.1) +
-  ylim(0.1,1) +
-  theme_minimal() +
-  theme(legend.position = "bottom") +
-  theme(text = element_text(size=15))
+<!-- p2<- sjPlot::plot_model({model_no_luminance}, -->
+<!--            type = "pred", -->
+<!--            terms = c("cond"), -->
+<!--            alpha = 0.1) + -->
+<!--   ylim(0.1,1) + -->
+<!--   theme_minimal() + -->
+<!--   theme(legend.position = "bottom") + -->
+<!--   theme(text = element_text(size=15)) -->
 
-grid.arrange(p1, p2, ncol = 2)
-```
+<!-- grid.arrange(p1, p2, ncol = 2) -->
+<!-- ``` -->
 
-The differences can be quite surprising, so it's important to remember the meaning of luminance in pupillary research!
+<!-- The differences can be quite surprising, so it's important to remember the meaning of luminance in pupillary research! -->
 
 ## Neglected (and very important) elements of the study
 

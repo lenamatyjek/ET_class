@@ -1,0 +1,497 @@
+---
+title: "Basic Research Methods: eye tracking <br> tutorial"
+author: "MagdaLena Matyjek"
+date: "10/01/2020"
+output: slidy_presentation
+font_adjustment: -1
+footer: "Lena Matyjek // Berlin School of Mind and Brain, HU Berlin"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+options(scipen=999)
+rm(list=ls())
+Sys.setenv(LANG = "en")
+```
+
+## Hands-on exercise
+
+Task:
+
+>-  a passive-viewing task
+
+>- Three conditions: <b>positive</b>, <b>negative</b> and <b>neutral</b> pictures from IAPS (International Affective Picture System)
+
+>- <div style="float: left; width: 33%;">
+<br />
+<img src="./img/H.jpg" style="width:95%;">
+</div>
+<div style="float: right; width: 33%;">
+<br />
+<img src="./img/F.jpg" style="width:95%">
+</div>
+<div style="float: right; width: 33%;">
+<br />
+<img src="./img/N.jpg" style="width:95%">
+</div>
+
+>-  3000 ms presentation, 500 ms ITI
+
+>- 15 x each condition (no repeating items)
+
+>- time: ~3 min
+
+
+
+
+## Procedure
+
+
+1. Positioning
+
+2. Calibration (+ re-calibration)
+
+3. Data collection
+
+4. Data pre-processing
+
+5. Data visualisation
+
+6. Data interpretation
+
+
+
+## Hands-on time!
+
+
+
+Now we collect data from volunteers. Meanwhile, form groups of 5-10 people and prepare the experimental design and predictions by considering the following points:
+
+1.**Experimental design**:
+
+  >-  conditions (3: pos, neg, neu)
+  >-  no of repetitions of stimuli
+  >-  sample size + statistical power
+  >-  type of statistical analysis
+  
+2.**Research questions / hypotheses**
+
+  >-  backward reasoning: what could be the research question asked in this study?
+  >-  hypotheses and predictions: based on what you already know about eye tracking, pupillometry, and processing of emotional and neutral images in humans, propose your hypotheses and predictions for our results.
+
+
+
+## Raw data {.smaller}
+
+```{r load_raw, include=FALSE}
+fileName = paste("./data/1111.tsv", sep = "")
+rd <- read.table(fileName, fill=TRUE, header=TRUE, sep="\t")
+```
+
+```{r show_raw_structure, echo=TRUE}
+# show the first 4 rows
+head(rd,4)
+```
+
+## Structured raw data {.smaller}
+
+```{r include=FALSE}
+# change classes  
+rd[,1:4] <- lapply(rd[,1:4], as.character)
+  rd[,5:length(rd)] <- lapply(rd[,5:length(rd)], as.numeric)
+    for (i in 1:length(rd$timestamp)) {
+    if (rd[i,1] == "MSG") {
+      rd[i,1] = rd[i,2]
+      rd[i,2] = rd[i,3]
+      rd[i,3] = rd[i,4]
+    }
+  }
+  
+  options(digits.secs = 6) 
+  rd$timestamp <-  as.POSIXct(rd$timestamp)
+  rd$time <- as.numeric(rd$time)
+  rd$fix <- as.factor(rd$fix)
+  rd$state <- NULL
+```
+
+```{r show_selected_raw, echo=TRUE}
+  # show selected columns
+  data <- rd[,c(1,3:5,13,20)]
+  # ...and the first 5 rows
+  head(data,5)
+```
+
+## Pre-processing
+
+>- Pupil sizes were recorded binocularly using a desktop-mounted eye tracker (Eye Tribe, TheEyeTribe) at a 60 Hz sampling rate.
+
+>- Prior to the task, the eye tracker was calibrated with a nine-point grid.
+
+>- Offline preprocessing of the pupillary data was performed with Matlab code proposed by Kret & Sjak-Shie (2018). This includes:
+
+>- - blink and missing data interpolation
+
+>- - filtering
+
+>- - smoothing
+
+>- Segmentation and baseline correction were performed subsequently in R. Each segment was baseline-corrected (subtractive baseling correction: 200 ms).
+
+## Pre-processed data {.smaller}
+
+```{r cars, include=FALSE}
+# load pre-processed data
+load('./data/pupilData_final_200subtractive_mean.RData')
+# change the name of the dataframe
+data <- fdb_all; rm(fdb_all)
+# remove pilots:
+rej_codes = c('1111','2222','3333','4444')
+data <- data[!as.character(data$code) %in% rej_codes,]
+data$code <- droplevels(data$code) # we have to drop levels, otherwise R will keep "remembering" the pilots
+# reset row names
+rownames(data) <- NULL
+```
+
+```{r}
+# show the first 20 rows
+head(data,20)
+```
+
+## Basic descriptives
+
+Sample size:
+```{r}
+length(unique(data$code))
+```
+
+Mean, max, and min (relative to baseline):
+```{r}
+round(mean(data$size_fdb),2)
+round(max(data$size_fdb),2)
+round(min(data$size_fdb),2)
+```
+
+*Question*:
+
+>- What do negative values mean?
+
+## Aggregate data
+
+*Question*:
+
+>- What is data aggregation?
+
+For plotting, we need the time course, but for statistics we have to aggregate the data over conditions and a time window. Here we will use 1 - 3 secs.
+
+*Question*:
+
+>- Why won't we use the data < 1 sec?
+
+```{r, include=FALSE}
+sapply(data,class)
+data$cond <- as.factor(data$cond)
+
+# For plotting:
+data_P_av <- aggregate(list(data$size_fdb),by=list(data$cond, data$t_fdb),mean) # aggregated over trials
+colnames(data_P_av) <- c("cond","t","size")
+
+# For stats:
+data2 <- data[data$t_fdb >= 1 & data$t_fdb <= 3,]
+data_av_trials <- aggregate(list(data2$size_fdb),by=list(data2$code, data2$cond, data2$trial_no),mean) # with trials
+colnames(data_av_trials) <- c("code","cond","trial","size")
+
+data_av <- aggregate(list(data2$size_fdb),by=list(data2$code, data2$cond),mean) # aggregated over trials
+colnames(data_av) <- c("code","cond","size")
+```
+
+ Aggregated data for plotting:
+```{r}
+head(data_P_av,6)
+```
+
+ Aggregated data for stats:
+```{r}
+head(data_av,6)
+```
+
+*Note*, that we display data here in the **long format**. For analyses in R, long format is required. However, different software may take the **wide format**, which in out case looks like this:
+```{r}
+library('tidyr')
+data_wide_av <- spread(data_av, cond, size)
+
+head(data_wide_av,6)
+```
+
+
+## Plotting the data - visual inspection
+
+Let's plot the averaged data over participants for each condition (the grey bands are the 95% confidence intervals):
+
+```{r pressure, echo=FALSE, message=FALSE, warning=FALSE}
+library('ggplot2')
+
+# Plot fdb averages
+plot.fdb <- ggplot(data_P_av, aes(t, size, colour = cond))
+plot_av <- plot.fdb  + geom_smooth(se=T) + scale_color_manual(values=c("gray37","royalblue2", "red1"), name="Condition") +
+  labs(x="Time [s]", y="Pupil size change [au]" ) + #title = "Average changes in pupil size\nin response to feedback") +
+  geom_vline(xintercept = 0, size = 0.5, col = "#3F3F3F") + geom_hline(yintercept = 0, size = 0.5, col = "#3F3F3F") +
+  theme_minimal() +
+  theme(legend.position="bottom") +
+  theme(text = element_text(size=20))
+plot_av
+```
+
+*Question*:
+
+>- What can we say about the results already?
+
+## Individual plots
+
+Do all participants respond with a similar pattern?
+
+```{r, message=FALSE, warning=FALSE}
+
+data_indPlots <- aggregate(list(data$size_fdb),by=list(data$cond, data$t_fdb, data$code),mean)
+colnames(data_indPlots) <- c("cond","t","code","size")
+
+  ggplot(data_indPlots, aes(t, size, colour = cond)) +
+  geom_smooth(se=T) + scale_color_manual(values=c("gray37","royalblue2", "red1"), name="Condition") +
+  labs(x="Time [s]", y="Pupil size change [au]" ) + #title = "Average changes in pupil size\nin response to feedback") +
+  geom_vline(xintercept = 0, size = 0.5, col = "#3F3F3F") + geom_hline(yintercept = 0, size = 0.5, col = "#3F3F3F") +
+  theme_minimal() +
+  theme(legend.position="bottom") +
+  theme(text = element_text(size=20)) +
+  facet_wrap(~code, ncol = 3)
+
+```
+
+## Plotting the data - visual inspection 2
+
+Let's look at boxplots to have an idea about the spread of the data:
+
+```{r}
+ggplot(data_av, aes(x=cond, y=size, colour = cond)) + 
+  geom_boxplot() + scale_color_manual(values=c("gray37","royalblue2", "red1"), name="Condition") +
+  theme_minimal() +
+  theme(legend.position="none") +
+  theme(text = element_text(size=20))
+```
+
+*Question*:
+
+>- What can we read in this plot?
+
+
+## Luminance
+
+We haven't yet consider a very important aspect - the Pupil Light Reflex (PLR).
+
+*Question*:
+
+>- How does PLR apply to out study? Is it a problem? How to deal with it?
+
+```{r, message=FALSE, warning=FALSE, include=FALSE}
+# Silent slide - adding luminance
+luminance <- read.csv2('./data/luminance.csv', sep = ",")
+
+d <- data_av #backup
+data_av <- aggregate(list(data2$size_fdb),by=list(data2$code, data2$cond, data2$item),mean) # aggregated over trials
+colnames(data_av) <- c("code","cond","item","size")
+data_av <- merge(data_av, luminance, by = "item")
+data_av_noLum <- d; rm(d)
+```
+
+Luminance - measurement of luminous intensity per unit area. Here - an approximation for human perception.
+
+```{r}
+head(data_av, 10)
+```
+
+
+## Hypotheses testing
+
+**H0.** There is no difference between the means of pupillary responses to the three conditions (POS = NEG = CTR)
+  <br>or: the means of the different groups are the same
+  
+**H1.** Mean responses to at least one condition are statistically significantly different than to one of the others.
+  <br>or: at least one sample mean is not equal to the others
+
+
+Statistical test: repeated measures Analysic of Variance (rmANOVA) on a linear mixed model (LMM):
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+library("lmerTest")
+
+model_no_luminance = lmerTest::lmer(size ~ cond + (1|code), data=data_av_noLum, REML = F)
+model = lmerTest::lmer(size ~ cond + luminance + (1|code), data=data_av, REML = F)
+```
+
+See the anova results for the model with luminance:
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+anova(model)
+```
+
+*Question*:
+
+>- How can we read the results?
+
+*Question*:
+
+>- Have we rejected the null hypothesis?
+
+*Question*:
+
+>- If so, which groups differ in a statistically significant way?
+
+
+
+**Which model is better - with or without luminance?**
+<br><br>Q. 1: Does luminance explain a significant amount of variation?
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+model.null = nlme::gls(size ~ 1, data_av, method = "ML")
+model.lum = nlme::gls(size ~ luminance, data_av, method = 'ML')
+anova(model.null,model.lum) 
+```
+
+Q.2: Does adding lumination as a covariate to the model improve the model or should there be a penalty for too many variables?
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+AIC(model_no_luminance)
+AIC(model)
+```
+
+
+## Contrasts
+
+Contrasts are linear combinations of variables, which allows their comparison.
+Let's see how the contrasts look in our dataset:
+
+```{r}
+contrasts(data_av$cond)
+```
+
+This means that the model will set its "baseline" to the CONTROL condition, and show us two pairwise comparisons:
+<br>CTR - NEG
+<br>CTR - POS
+<br>
+
+## Pairwise comparisons - regression results
+
+Plot of the results:
+
+```{r, message=FALSE, warning=FALSE}
+library("gridExtra")
+sj_plot <- sjPlot::plot_model({model},
+           type = "pred",
+           terms = c("cond"),
+           alpha = 0.1) +
+  theme_minimal() +
+  geom_point(size = 3) +
+  theme(legend.position = "bottom") +
+  theme(text = element_text(size=15))
+
+grid.arrange(sj_plot, plot_av, ncol = 2)
+```
+
+
+To see pairwise comparisons, we have to either perform post-hoc tests, or look into the results of the regression model:
+
+```{r}
+summary(model)
+```
+
+***Question***:
+
+>- **What is our main finding? Did we find an effect of condition? How do we interpret this (luminance, valence, arousal, cognitive load...)?**
+
+*Question*:
+
+>- What are effect sizes and where are they in this output?
+
+## Controlling for luminance
+
+Models controlling (left) and **not** controlling (right) for luminance:
+
+```{r, message=FALSE, warning=FALSE}
+p1<- sjPlot::plot_model({model},
+           type = "pred",
+           terms = c("cond"),
+           alpha = 0.1) +
+  ylim(0.1,1) +
+  theme_minimal() +
+  theme(legend.position = "bottom") +
+  theme(text = element_text(size=15))
+
+p2<- sjPlot::plot_model({model_no_luminance},
+           type = "pred",
+           terms = c("cond"),
+           alpha = 0.1) +
+  ylim(0.1,1) +
+  theme_minimal() +
+  theme(legend.position = "bottom") +
+  theme(text = element_text(size=15))
+
+grid.arrange(p1, p2, ncol = 2)
+```
+
+The differences can be quite surprising, so it's important to remember the meaning of luminance in pupillary research!
+
+## Neglected (and very important) elements of the study
+
+Our "study" misses a few critical points which should be carefully considered and addressed by researchers:
+
+>- First literature review, research questions and hypotheses! Then design, pilot and data collection.
+
+>- Assumptions for statistical tests (normality, linear relation, multicollinearity, homoscedasticity).
+
+>- Sample size based on power analysis (making sure we have anough power to show an effect).
+
+>- AOIs - did people actually look at the stimuli?
+
+>- Outliers - are there any and should we remove them?
+
+## Summary
+
+We conducted a short study investigating pupillary responses to emotionally loaded and neutral images.
+
+**Research question:**
+
+>- Do pupillary responses to negative (scary, disgusting, sad), positive (happy, "cute", sexually arousal), and neutral images differ? /// Do pos, neg and neu images differ in arousal? // ...
+
+**Hypothesis (for example):**
+
+>- Arousing images elicit larger pupil sizes as compared to neutral images (regardless of valence). <- a directed hypothesis.
+
+**Design: sample size, inclusion / exclusion criteria, how were they recruited, how were they reimbursed?**
+
+>- ..., students in the Basic Research Methods course with normal r corrected-to-normal vision, participation in the class, reimbursed with knowledge! :) 
+
+**Dependent variable:**
+
+>- pupil size
+
+**Independent variable:**
+
+>- condition
+
+**Confounding variables (covariates):**
+
+>- luminance of the images
+
+
+**Statistical procedures:**
+
+>- Linear Regression Mixed Model and ANOVA (to estimate the main effect of condition).
+
+
+
+
+## Questions and / or comments?
+
+Thank you for your attention!
+
+
+<center>
+<img src="./img/img.jpg" style="width:50%">
+</center>
+

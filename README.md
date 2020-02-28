@@ -4,7 +4,7 @@ Basic Research Methods: Eye tracking
 Download all materials with the "Clone of download" button. If you use git, you can also clone the repository.
 
 Slides from the lecture can be found under:
-- lecture_slides.pdf
+- Lecture_eye_tracking_slides.pdf
 
 Slides from the tutorial can be found under:
 - Tutorial_slides.pdf (won't display well, rather use the next option)
